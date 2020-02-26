@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using LibraryApi.Domain;
 using LibraryApi.Services;
 using Microsoft.AspNetCore.Builder;
@@ -12,6 +8,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
+using System;
+using System.IO;
+using System.Reflection;
 
 namespace LibraryApi
 {
@@ -32,6 +32,25 @@ namespace LibraryApi
             services.AddDbContext<LibraryDataContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("LibraryDatabase"))
             );
+
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "Book API",
+                    Version = "1.0",
+                    Contact = new OpenApiContact
+                    {
+                        Name = "Jesse Taylor",
+                        Email = "cobra4444@gmail.com"
+                    },
+                    Description = "This is the API for BES 100",
+
+                });
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -42,6 +61,14 @@ namespace LibraryApi
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Library API");
+                //Empty RoutePrefix causes it to be the default (ie localhost:1337/)
+                c.RoutePrefix = string.Empty;
+                //adding a prefix will just add it after the / (ie c.RoutePrefix = "docs" translates to localhost:1337/doc
+            });
             app.UseRouting();
 
             app.UseAuthorization();
